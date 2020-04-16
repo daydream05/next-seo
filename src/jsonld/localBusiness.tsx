@@ -17,6 +17,47 @@ type Geo = {
   longitude: string;
 };
 
+type ReviewRating = {
+  bestRating?: string;
+  ratingValue: string;
+  worstRating?: string;
+};
+
+type Review = {
+  author: string;
+  datePublished?: string;
+  reviewBody?: string;
+  name?: string;
+  reviewRating: ReviewRating;
+};
+
+const buildReviewRating = (rating: ReviewRating) =>
+  rating
+    ? `"reviewRating": {
+          "@type": "Rating",
+          ${rating.bestRating ? `"bestRating": "${rating.bestRating}",` : ''}
+          ${rating.worstRating ? `"worstRating": "${rating.worstRating}",` : ''}
+          "ratingValue": "${rating.ratingValue}"
+        },`
+    : '';
+
+const buildReviews = (reviews: Review[]) => `
+"review": [
+  ${reviews.map(
+    review => `{
+      "@type": "Review",
+      ${
+        review.datePublished
+          ? `"datePublished": "${review.datePublished}",`
+          : ''
+      }
+      ${review.reviewBody ? `"reviewBody": "${review.reviewBody}",` : ''}
+      ${review.name ? `"name": "${review.name}",` : ''}
+      ${buildReviewRating(review.reviewRating)}
+      "author": "${review.author}"
+  }`,
+  )}],`;
+
 export interface LocalBusinessJsonLdProps {
   type: string;
   id: string;
@@ -27,6 +68,7 @@ export interface LocalBusinessJsonLdProps {
   address: Address;
   geo: Geo;
   images: string[];
+  reviews?: Review[];
 }
 
 const buildGeo = (geo: Geo) => `
@@ -62,6 +104,7 @@ const LocalBusinessJsonLd: FC<LocalBusinessJsonLdProps> = ({
   address,
   geo,
   images,
+  reviews
 }) => {
   const jslonld = `{
     "@context": "http://schema.org",
@@ -74,6 +117,7 @@ const LocalBusinessJsonLd: FC<LocalBusinessJsonLdProps> = ({
     ${geo ? `${buildGeo(geo)}` : ''}
     "image":${formatIfArray(images)},
     "name": "${name}"
+    ${reviews.length ? buildReviews(reviews) : ''}
   }`;
 
   return (
